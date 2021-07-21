@@ -1,79 +1,43 @@
 package mtg.application.controller;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
-
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import javax.inject.Inject;
+import javax.websocket.server.PathParam;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import mtg.application.entity.Card;
-import mtg.application.exception.CardNotFoundException;
-import mtg.application.repository.CardRepository;
+import io.magicthegathering.javasdk.api.CardAPI;
+import io.magicthegathering.javasdk.resource.Card;
+import mtg.application.exception.NoMatchingCardFoundException;
+import mtg.application.exception.TooManyMatchesException;
+import mtg.application.service.CardService;
 
 @RestController
 public class CardController {
 
-    private final CardRepository cardBaseRepository;
+    @Inject
+    private CardService cardService;
 
-    private final CardModelAssembler cardModelAssembler;
-
-    CardController(CardRepository cardBaseRepository, CardModelAssembler cardModelAssembler) {
-        this.cardBaseRepository = cardBaseRepository;
-        this.cardModelAssembler = cardModelAssembler;
+    @GetMapping("/card/filter")
+    public List<Card> findCardByFilter(@RequestParam(name = "filter") List<String> filter) {
+        return CardAPI.getAllCards(filter);
     }
 
-    @GetMapping("/cards")
-    CollectionModel<EntityModel<Card>> findAll() {
-        List<EntityModel<Card>> cards = cardBaseRepository.findAll().stream().map(cardModelAssembler::toModel)
-                .collect(Collectors.toList());
-        return CollectionModel.of(cards, linkTo(methodOn(CardController.class).findAll()).withSelfRel());
+    @GetMapping("/card/{name}")
+    public List<Card> findCardByName(@PathParam("name") String name) {
+        return CardAPI.getAllCards(Arrays.asList("name=" + name));
     }
 
-    @PostMapping("/cards")
-    ResponseEntity<?> newCard(@RequestBody Card newCard) {
-        EntityModel<Card> entityModel = cardModelAssembler.toModel(cardBaseRepository.save(newCard));
-        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
+    @PostMapping("/card/{name}")
+    public mtg.application.entity.Card addCardToDataBase(@PathVariable String name)
+        throws TooManyMatchesException, NoMatchingCardFoundException {
+        return cardService.findAndAddCardToDatabase(name);
     }
 
-    @GetMapping("/cards/{id}")
-    EntityModel<Card> findById(@PathVariable Long id) {
-        Card card = cardBaseRepository.findById(id).orElseThrow(() -> new CardNotFoundException(id));
-
-        return cardModelAssembler.toModel(card);
-    }
-
-    @PutMapping("/cards/{id}")
-    ResponseEntity<?> updateCard(@RequestBody Card newCard, @PathVariable Long id) {
-
-        Card updatedCard = cardBaseRepository.findById(id).map(card -> {
-            card.setCardName(newCard.getCardName());
-            card.setType(newCard.getType());
-            return cardBaseRepository.save(card);
-        }).orElseGet(() -> {
-            newCard.setId(id);
-            return cardBaseRepository.save(newCard);
-        });
-
-        EntityModel<Card> entityModel = cardModelAssembler.toModel(updatedCard);
-        return ResponseEntity.created(entityModel.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(entityModel);
-
-    }
-
-    @DeleteMapping("/cards/{id}")
-    ResponseEntity<?> deleteCard(@PathVariable Long id) {
-        cardBaseRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
 }
