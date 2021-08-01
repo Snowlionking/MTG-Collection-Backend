@@ -38,5 +38,6 @@ public class Card {
     private double convertedManaCost;
 
     private int numberOwn;
+    private int multiverseId;
 
 }
