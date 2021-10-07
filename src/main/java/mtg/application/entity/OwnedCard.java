@@ -9,15 +9,15 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
-@Builder
+@Data
 @Entity
+@NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "Cards")
-public class Card {
+public class OwnedCard {
 
     @Id
     @GeneratedValue
@@ -36,6 +36,9 @@ public class Card {
     private String imageUrl;
 
     private double convertedManaCost;
+    private double price;
+
+    private boolean foil;
 
     private int numberOwn;
     private int multiverseId;

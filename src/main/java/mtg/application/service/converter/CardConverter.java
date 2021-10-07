@@ -7,13 +7,18 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import io.magicthegathering.javasdk.resource.Card;
+import lombok.extern.slf4j.Slf4j;
 import mtg.application.entity.CardTypes;
+import mtg.application.entity.OwnedCard;
 import mtg.application.model.CardView;
+import mtg.application.model.CardViewList;
+import mtg.application.model.ScryfallCard;
 
 @Service
+@Slf4j
 public class CardConverter {
 
-    public mtg.application.entity.Card convert(Card card) {
+    public OwnedCard convert(Card card, ScryfallCard cardScryfall) {
         List<String> subTypes = new ArrayList<>();
         if (null != card.getSubtypes()) {
             subTypes = Arrays.asList(card.getSubtypes());
@@ -22,38 +27,62 @@ public class CardConverter {
         if (null != card.getSupertypes()) {
             superTypes = Arrays.asList(card.getSupertypes());
         }
-        List<String> types = new ArrayList<>();
+        List<String> cardTypes = new ArrayList<>();
         if (null != card.getTypes()) {
-            types = Arrays.asList(card.getTypes());
+            cardTypes = Arrays.asList(card.getTypes());
         }
-        return mtg.application.entity.Card.builder()
-            .cardEffect(card.getText())
-            .cardName(card.getName())
-            .cardTypes(CardTypes.builder().subTypes(subTypes).superTypes(superTypes).types(types).build())
-            .convertedManaCost(card.getCmc())
-            .flavourText(card.getFlavor())
-            .imageUrl(card.getImageUrl())
-            .manaCost(card.getManaCost())
-            .numberOwn(1)
-            .multiverseId(card.getMultiverseid())
-            .build();
+        OwnedCard ownedCard = new OwnedCard();
+        ownedCard.setCardEffect(card.getText());
+        ownedCard.setCardName(card.getName());
+        CardTypes types = new CardTypes();
+        types.setSubTypes(subTypes);
+        types.setSuperTypes(superTypes);
+        types.setTypes(cardTypes);
+        ownedCard.setCardTypes(types);
+        ownedCard.setConvertedManaCost(card.getCmc());
+        ownedCard.setFlavourText(card.getFlavor());
+        ownedCard.setImageUrl(card.getImageUrl());
+        ownedCard.setManaCost(card.getManaCost());
+        ownedCard.setMultiverseId(card.getMultiverseid());
+        ownedCard.setNumberOwn(1);
+        // ownedCard.setPrice(Double.valueOf(cardScryfall.getPrices().getEur_foil()));
+        // ownedCard.setPrice(Double.valueOf(cardScryfall.getPrices().getEur()));
+        return ownedCard;
     }
 
-    public List<CardView> convert(List<Card> allCards) {
+    public CardViewList convert(List<Card> allCards) {
         if (allCards == null) {
             return null;
         }
 
-        List<CardView> cardViewList = new ArrayList<>();
+        CardViewList cardViewList = new CardViewList();
+        List<CardView> cardViews = new ArrayList<>();
 
         for (Card card : allCards) {
             if (card.getMultiverseid() == -1) {
                 continue;
             }
-            CardView cardView = new CardView(card.getName(), card.getImageUrl(), card.getMultiverseid());
-            cardViewList.add(cardView);
+            cardViews.add(CardView.builder()
+                .name(card.getName())
+                .imageUrl(card.getImageUrl())
+                .multiverseId(card.getMultiverseid())
+                .build());
         }
+        cardViewList.setCardViews(cardViews);
+        return cardViewList;
+    }
 
+    public CardViewList convertFromDBToView(List<OwnedCard> findAll) {
+        CardViewList cardViewList = new CardViewList();
+        List<CardView> cardviews = new ArrayList<>();
+        for (OwnedCard card : findAll) {
+            cardviews.add(CardView.builder()
+                .imageUrl(card.getImageUrl())
+                .multiverseId(card.getMultiverseId())
+                .name(card.getCardName())
+                .build());
+        }
+        cardViewList.setCardViews(cardviews);
         return cardViewList;
     }
 

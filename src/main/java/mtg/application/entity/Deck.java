@@ -1,12 +1,10 @@
 package mtg.application.entity;
 
-import java.util.List;
-
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import lombok.AllArgsConstructor;
@@ -17,23 +15,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "CardTypes")
-public class CardTypes {
+@Table(name = "Decks")
+public class Deck {
 
     @Id
     @GeneratedValue
     private Long id;
 
-    @OneToOne(mappedBy = "cardTypes")
+    @ManyToOne
+    @JoinColumn(name = "card_id")
     private OwnedCard card;
 
-    @ElementCollection
-    private List<String> types;
-
-    @ElementCollection
-    private List<String> subTypes;
-
-    @ElementCollection
-    private List<String> superTypes;
+    private String deckName;
+    private String commanderName;
 
 }
